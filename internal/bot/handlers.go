@@ -69,6 +69,7 @@ func (b *Bot) msgEvtDispatcher(source mautrix.EventSource, evt *event.Event) {
 
 	if b.historyResetHandler(user, evt) {
 		l.Info().Msg("reset history")
+		return
 	}
 
 	err := b.sendAnswer(user, evt)
