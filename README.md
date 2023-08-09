@@ -1,6 +1,8 @@
 # Matrix GPT
 
 Matrix GPT is a Matrix chatbot that uses OpenAI for real-time chatting.
+
+![](./.github/img.png)
 ## Installation
 
 ### Docker
@@ -9,7 +11,6 @@ Run the Docker container:
 
 ```bash
 docker run -d --name matrix-gpt \
-  -p 8080:8080 \
   -e MATRIX_PASSWORD="matrix password" \
   -e MATRIX_ID="matrix id" \
   -e MATRIX_URL="matrix server url" \
