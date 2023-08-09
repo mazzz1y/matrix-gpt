@@ -43,10 +43,12 @@ func (b *Bot) historyResetHandler(user *gpt.User, evt *event.Event) (ok bool) {
 }
 
 // historyExpireHandler checks if the history for a user has expired and resets if necessary.
-func (b *Bot) historyExpireHandler(user *gpt.User) {
-	if user.LastMsg.Add(time.Duration(b.historyExpire) * time.Hour).Before(time.Now()) {
+func (b *Bot) historyExpireHandler(user *gpt.User) (ok bool) {
+	if user.GetLastMsgTime().Add(time.Duration(b.historyExpire) * time.Hour).Before(time.Now()) {
 		user.History.ResetHistory()
+		return true
 	}
+	return false
 }
 
 // msgEvtDispatcher dispatches incoming messages to their appropriate handlers.
@@ -68,14 +70,19 @@ func (b *Bot) msgEvtDispatcher(source mautrix.EventSource, evt *event.Event) {
 	}
 
 	if b.historyResetHandler(user, evt) {
-		l.Info().Msg("reset history")
+		l.Info().Msg("history reset by user command")
 		return
+	}
+	if b.historyExpireHandler(user) {
+		l.Info().Msg("history has expired, resetting")
 	}
 
 	err := b.sendAnswer(user, evt)
 	if err != nil {
 		l.Err(err).Msg("failed to send message")
-	} else {
-		l.Info().Msg("sending answer")
+		return
 	}
+
+	user.UpdateLastMsgTime()
+	l.Info().Msg("message sent")
 }

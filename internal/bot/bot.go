@@ -1,8 +1,6 @@
 package bot
 
 import (
-	"sync"
-
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mazzz1y/matrix-gpt/internal/gpt"
 	"github.com/rs/zerolog/log"
@@ -11,7 +9,6 @@ import (
 )
 
 type Bot struct {
-	sync.Mutex
 	client        *mautrix.Client
 	gptClient     *gpt.Gpt
 	selfProfile   mautrix.RespUserProfile

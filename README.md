@@ -18,7 +18,6 @@ docker run -d --name matrix-gpt \
   -e SQLITE_PATH="persistent path for sqlite database"
   -e USER_IDS="allowed user ids"
   ghcr.io/mazzz1y/matrix-gpt:latest
-
 ```
 ## Configuration
 
