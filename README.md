@@ -39,12 +39,20 @@ information.
 
 ## Usage
 
-1. Begin by adding the bot to your contact list.
-   Once added, you can start interacting with it. Simply send your questions or commands, and the bot will respond.
-2. If at any point you wish to reset the context of the conversation, use the `!reset` command.
-   Send `!reset` as a message to the bot, and it will clear the existing context, allowing you to start a fresh
-   conversation.
+Follow these simple steps to interact with the bot:
 
-## TODO
+1. **Add the bot to your contact list.**
 
-* Add image generation using DALL·E model
+   After the bot has been added, begin your interaction by sending your questions, commands or comments.
+
+2. **Send commands.**
+
+   You can use the following commands to communicate with the bot:
+
+   - **Generate an Image:** `!image [text]` - This command creates an image based on the provided text.
+   - **Reset User History:** `!reset [text]` - This command resets the user's command history. If text is provided following the reset command, the bot will generate a GPT-based response based on this text.
+   - **Send a Text Message:** `[text]` - Send any text to the bot and it will generate a GPT-based response relevant to your text.
+
+3. **Identify error responses.**
+
+   If there are any errors in processing your requests or commands, the bot will respond with a ❌ reaction.

@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// GetCompletion retrieves a completion from GPT using the given user's message.
-func (g *Gpt) GetCompletion(u *User, userMsg string) (string, error) {
+// CreateCompletion retrieves a completion from GPT using the given user's message.
+func (g *Gpt) CreateCompletion(u *User, userMsg string) (string, error) {
 	// Append the user's message to the existing history.
 	messageHistory := append(u.History.GetHistory(), openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,

@@ -1,23 +1,21 @@
 package bot
 
 import (
-	"time"
-
+	"fmt"
 	"github.com/mazzz1y/matrix-gpt/internal/gpt"
-	"github.com/mazzz1y/matrix-gpt/internal/text"
 	"github.com/rs/zerolog/log"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 )
 
-// messageHandler sets up the handler for incoming messages.
-func (b *Bot) messageHandler() {
+// setupMessageEvent sets up the handler for incoming messages.
+func (b *Bot) setupMessageEvent() {
 	syncer := b.client.Syncer.(*mautrix.DefaultSyncer)
-	syncer.OnEventType(event.EventMessage, b.msgEvtDispatcher)
+	syncer.OnEventType(event.EventMessage, b.messageHandler)
 }
 
-// joinRoomHandler sets up the handler for joining rooms.
-func (b *Bot) joinRoomHandler() {
+// setupJoinRoomEvent sets up the handler for joining rooms.
+func (b *Bot) setupJoinRoomEvent() {
 	syncer := b.client.Syncer.(*mautrix.DefaultSyncer)
 	syncer.OnEventType(event.StateMember, func(source mautrix.EventSource, evt *event.Event) {
 		_, ok := b.gptClient.GetUser(evt.Sender.String())
@@ -32,28 +30,8 @@ func (b *Bot) joinRoomHandler() {
 	})
 }
 
-// historyResetHandler checks for the reset command and resets history if found.
-func (b *Bot) historyResetHandler(user *gpt.User, evt *event.Event) (ok bool) {
-	if text.HasPrefixIgnoreCase(evt.Content.AsMessage().Body, "!reset") {
-		user.History.ResetHistory()
-		_ = b.sendReaction(evt, "✅")
-		return true
-	}
-	return false
-}
-
-// historyExpireHandler checks if the history for a user has expired and resets if necessary.
-func (b *Bot) historyExpireHandler(user *gpt.User) (ok bool) {
-	if user.GetLastMsgTime().Add(time.Duration(b.historyExpire) * time.Hour).Before(time.Now()) {
-		user.History.ResetHistory()
-		return true
-	}
-	return false
-}
-
-// msgEvtDispatcher dispatches incoming messages to their appropriate handlers.
-func (b *Bot) msgEvtDispatcher(source mautrix.EventSource, evt *event.Event) {
-	// Ignore messages sent by the bot itself
+// messageHandler handles incoming messages based on their type.
+func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 	if b.client.UserID.String() == evt.Sender.String() {
 		return
 	}
@@ -69,20 +47,37 @@ func (b *Bot) msgEvtDispatcher(source mautrix.EventSource, evt *event.Event) {
 		return
 	}
 
-	if b.historyResetHandler(user, evt) {
-		l.Info().Msg("history reset by user command")
-		return
-	}
-	if b.historyExpireHandler(user) {
-		l.Info().Msg("history has expired, resetting")
-	}
-
-	err := b.sendAnswer(user, evt)
+	err := b.sendResponse(user, evt)
 	if err != nil {
-		l.Err(err).Msg("failed to send message")
-		return
+		b.reactionResponse(evt, "❌")
+		l.Err(err).Msg("response error")
 	}
 
 	user.UpdateLastMsgTime()
 	l.Info().Msg("message sent")
+}
+
+// sendResponse responds to the user command.
+func (b *Bot) sendResponse(user *gpt.User, evt *event.Event) (err error) {
+	b.markRead(evt)
+	b.startTyping(evt.RoomID)
+	defer b.stopTyping(evt.RoomID)
+
+	cmd := extractCommand(evt.Content.AsMessage().Body)
+	msg := trimCommand(evt.Content.AsMessage().Body)
+
+	switch cmd {
+	case HelpCommand:
+		err = b.helpResponse(evt.RoomID)
+	case GenerateImageCommand:
+		err = b.imageResponse(evt.RoomID, msg)
+	case HistoryResetCommand:
+		err = b.resetResponse(user, evt, msg)
+	case "":
+		err = b.completionResponse(user, evt.RoomID, msg)
+	default:
+		err = fmt.Errorf("command: %s does not exist", cmd)
+	}
+
+	return err
 }

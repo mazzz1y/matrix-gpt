@@ -10,7 +10,6 @@ func run(c *cli.Context) error {
 	mPassword := c.String("matrix-password")
 	mUserId := c.String("matrix-id")
 	mUrl := c.String("matrix-url")
-	mRoom := c.String("matrix-room")
 	sqlitePath := c.String("sqlite-path")
 
 	gptModel := c.String("gpt-model")
@@ -28,7 +27,7 @@ func run(c *cli.Context) error {
 	setLogLevel(logLevel, logType)
 
 	g := gpt.New(openaiToken, gptModel, historyLimit, gptTimeout, maxAttempts, userIDs)
-	m, err := bot.NewBot(mUrl, mUserId, mPassword, sqlitePath, mRoom, historyExpire, g)
+	m, err := bot.NewBot(mUrl, mUserId, mPassword, sqlitePath, historyExpire, g)
 	if err != nil {
 		return err
 	}

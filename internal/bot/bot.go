@@ -6,18 +6,18 @@ import (
 	"github.com/rs/zerolog/log"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/cryptohelper"
+	"time"
 )
 
 type Bot struct {
 	client        *mautrix.Client
 	gptClient     *gpt.Gpt
 	selfProfile   mautrix.RespUserProfile
-	replaceFile   string
-	historyExpire int
+	historyExpire time.Duration
 }
 
 // NewBot initializes a new Matrix bot instance.
-func NewBot(serverUrl, userID, password, sqlitePath, scheduleRoom string, historyExpire int, gpt *gpt.Gpt) (*Bot, error) {
+func NewBot(serverUrl, userID, password, sqlitePath string, historyExpire int, gpt *gpt.Gpt) (*Bot, error) {
 	client, err := mautrix.NewClient(serverUrl, "", "")
 	if err != nil {
 		return nil, err
@@ -39,7 +39,6 @@ func NewBot(serverUrl, userID, password, sqlitePath, scheduleRoom string, histor
 	}
 
 	client.Crypto = crypto
-
 	profile, err := client.GetProfile(client.UserID)
 	if err != nil {
 		return nil, err
@@ -57,7 +56,7 @@ func NewBot(serverUrl, userID, password, sqlitePath, scheduleRoom string, histor
 		client:        client,
 		gptClient:     gpt,
 		selfProfile:   *profile,
-		historyExpire: historyExpire,
+		historyExpire: time.Duration(historyExpire) * time.Hour,
 	}, nil
 }
 
@@ -65,8 +64,8 @@ func NewBot(serverUrl, userID, password, sqlitePath, scheduleRoom string, histor
 func (b *Bot) StartHandler() error {
 	logger := log.With().Str("component", "handler").Logger()
 
-	b.joinRoomHandler()
-	b.messageHandler()
+	b.setupJoinRoomEvent()
+	b.setupMessageEvent()
 
 	logger.Info().Msg("started handler")
 	return b.client.Sync()
