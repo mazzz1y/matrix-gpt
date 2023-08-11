@@ -8,8 +8,9 @@ import (
 // User represents a GPT user with a chat history and last message timestamp.
 type User struct {
 	sync.RWMutex
-	History *HistoryManager
-	lastMsg time.Time
+	History  *HistoryManager
+	GPTMutex sync.Mutex
+	lastMsg  time.Time
 }
 
 // NewGptUser creates a new GPT user instance with a given history size.

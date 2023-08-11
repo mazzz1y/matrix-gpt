@@ -59,9 +59,13 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 
 // sendResponse responds to the user command.
 func (b *Bot) sendResponse(user *gpt.User, evt *event.Event) (err error) {
-	b.markRead(evt)
-	b.startTyping(evt.RoomID)
+	user.GPTMutex.Lock()
+	go func() {
+		b.markRead(evt)
+		b.startTyping(evt.RoomID)
+	}()
 	defer b.stopTyping(evt.RoomID)
+	defer user.GPTMutex.Unlock()
 
 	cmd := extractCommand(evt.Content.AsMessage().Body)
 	msg := trimCommand(evt.Content.AsMessage().Body)
@@ -76,7 +80,7 @@ func (b *Bot) sendResponse(user *gpt.User, evt *event.Event) (err error) {
 	case "":
 		err = b.completionResponse(user, evt.RoomID, msg)
 	default:
-		err = fmt.Errorf("command: %s does not exist", cmd)
+		err = fmt.Errorf("command \"!%s\" does not exist", cmd)
 	}
 
 	return err
