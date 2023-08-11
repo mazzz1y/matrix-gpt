@@ -38,7 +38,7 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 
 	l := log.With().
 		Str("component", "handler").
-		Str("user_id", evt.Sender.String()).
+		Str("user-id", evt.Sender.String()).
 		Logger()
 
 	user, ok := b.gptClient.GetUser(evt.Sender.String())

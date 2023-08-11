@@ -3,6 +3,7 @@ package gpt
 import (
 	"context"
 	"github.com/sashabaranov/go-openai"
+	"time"
 )
 
 type Gpt struct {
@@ -10,7 +11,7 @@ type Gpt struct {
 	ctx          context.Context
 	model        string
 	historyLimit int
-	gptTimeout   int
+	gptTimeout   time.Duration
 	maxAttempts  int
 	users        map[string]*User
 }
@@ -27,7 +28,7 @@ func New(token, gptModel string, historyLimit, gptTimeout, maxAttempts int, user
 		ctx:          context.Background(),
 		model:        gptModel,
 		historyLimit: historyLimit,
-		gptTimeout:   gptTimeout,
+		gptTimeout:   time.Duration(gptTimeout) * time.Second,
 		users:        users,
 		maxAttempts:  maxAttempts,
 	}
@@ -45,7 +46,7 @@ func (g *Gpt) GetModel() string {
 }
 
 // GetTimeout returns the timeout value for the GPT client.
-func (g *Gpt) GetTimeout() int {
+func (g *Gpt) GetTimeout() time.Duration {
 	return g.gptTimeout
 }
 

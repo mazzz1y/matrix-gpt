@@ -37,7 +37,7 @@ func (g *Gpt) CreateCompletion(u *User, userMsg string) (string, error) {
 
 // createCompletionWithTimeout makes a request to get a GPT completion with a specified timeout.
 func (g *Gpt) createCompletionWithTimeout(msg []openai.ChatCompletionMessage) (openai.ChatCompletionResponse, error) {
-	ctx, cancel := context.WithTimeout(g.ctx, time.Duration(g.gptTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(g.ctx, g.gptTimeout)
 	defer cancel()
 
 	return g.client.CreateChatCompletion(

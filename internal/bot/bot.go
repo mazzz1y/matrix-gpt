@@ -47,7 +47,7 @@ func NewBot(serverUrl, userID, password, sqlitePath string, historyExpire int, g
 	log.Info().
 		Str("matrix-username", profile.DisplayName).
 		Str("gpt-model", gpt.GetModel()).
-		Int("gpt-timeout", gpt.GetTimeout()).
+		Dur("gpt-timeout", gpt.GetTimeout()).
 		Int("history-limit", gpt.GetHistoryLimit()).
 		Int("history-expire", historyExpire).
 		Msg("connected to matrix")

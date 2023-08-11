@@ -12,7 +12,6 @@ import (
 	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
 	"net/http"
-	"time"
 )
 
 // completionResponse responds to a user message with a GPT-based completion.
@@ -102,8 +101,7 @@ func (b *Bot) markRead(evt *event.Event) {
 
 // startTyping notifies the room that the bot is typing.
 func (b *Bot) startTyping(roomID id.RoomID) {
-	timeout := time.Duration(b.gptClient.GetTimeout()) * time.Second
-	_, _ = b.client.UserTyping(roomID, true, timeout)
+	_, _ = b.client.UserTyping(roomID, true, b.gptClient.GetTimeout())
 }
 
 // stopTyping notifies the room that the bot has stopped typing.
