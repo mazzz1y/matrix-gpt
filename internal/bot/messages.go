@@ -6,5 +6,6 @@ const helpMessage = `**Commands**
 - *[text]*: If only text is provided, the bot will generate a GPT-based response related to that text.
 
 **Notes**
+- If you wish to terminate the current processing, simply delete your message from the chat.
 - The bot responds with ❌ reaction if there are any errors. Contact the administrator if you see this.
 `

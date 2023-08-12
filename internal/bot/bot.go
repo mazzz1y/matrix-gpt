@@ -1,12 +1,14 @@
 package bot
 
 import (
+	"time"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mazzz1y/matrix-gpt/internal/gpt"
 	"github.com/rs/zerolog/log"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/cryptohelper"
-	"time"
+	"maunium.net/go/mautrix/event"
 )
 
 type Bot struct {
@@ -47,7 +49,7 @@ func NewBot(serverUrl, userID, password, sqlitePath string, historyExpire int, g
 	log.Info().
 		Str("matrix-username", profile.DisplayName).
 		Str("gpt-model", gpt.GetModel()).
-		Dur("gpt-timeout", gpt.GetTimeout()).
+		Float64("gpt-timeout", gpt.GetTimeout().Seconds()).
 		Int("history-limit", gpt.GetHistoryLimit()).
 		Int("history-expire", historyExpire).
 		Msg("connected to matrix")
@@ -62,11 +64,9 @@ func NewBot(serverUrl, userID, password, sqlitePath string, historyExpire int, g
 
 // StartHandler initializes bot event handlers and starts the matrix client sync.
 func (b *Bot) StartHandler() error {
-	logger := log.With().Str("component", "handler").Logger()
-
-	b.setupJoinRoomEvent()
-	b.setupMessageEvent()
-
-	logger.Info().Msg("started handler")
+	syncer := b.client.Syncer.(*mautrix.DefaultSyncer)
+	syncer.OnEventType(event.EventMessage, b.messageHandler)
+	syncer.OnEventType(event.EventRedaction, b.redactionHandler)
+	syncer.OnEventType(event.StateMember, b.joinRoomHandler)
 	return b.client.Sync()
 }

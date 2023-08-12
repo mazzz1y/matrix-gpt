@@ -2,21 +2,23 @@ package bot
 
 import (
 	"bytes"
-	"github.com/mazzz1y/matrix-gpt/internal/gpt"
+	"context"
 	"image"
 	"image/png"
 	"io"
+	"net/http"
+
+	"github.com/mazzz1y/matrix-gpt/internal/gpt"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
 	"maunium.net/go/mautrix/id"
-	"net/http"
 )
 
 // completionResponse responds to a user message with a GPT-based completion.
-func (b *Bot) completionResponse(u *gpt.User, roomID id.RoomID, msg string) error {
-	answer, err := b.gptClient.CreateCompletion(u, msg)
+func (b *Bot) completionResponse(ctx context.Context, u *gpt.User, roomID id.RoomID, msg string) error {
+	answer, err := b.gptClient.CreateCompletion(ctx, u, msg)
 	if err != nil {
 		return err
 	}
@@ -30,8 +32,8 @@ func (b *Bot) helpResponse(roomID id.RoomID) error {
 }
 
 // imageResponse responds to the user message with a DALL-E created image.
-func (b *Bot) imageResponse(roomID id.RoomID, msg string) error {
-	img, err := b.gptClient.CreateImage(msg)
+func (b *Bot) imageResponse(ctx context.Context, roomID id.RoomID, msg string) error {
+	img, err := b.gptClient.CreateImage(ctx, msg)
 	if err != nil {
 		return err
 	}
@@ -72,10 +74,10 @@ func (b *Bot) imageResponse(roomID id.RoomID, msg string) error {
 
 // resetResponse clears the user's history. If a message is provided, it's processed as a new input.
 // Otherwise, a reaction is sent to indicate successful history reset.
-func (b *Bot) resetResponse(u *gpt.User, evt *event.Event, msg string) error {
+func (b *Bot) resetResponse(ctx context.Context, u *gpt.User, evt *event.Event, msg string) error {
 	u.History.ResetHistory()
 	if msg != "" {
-		return b.completionResponse(u, evt.RoomID, msg)
+		return b.completionResponse(ctx, u, evt.RoomID, msg)
 	} else {
 		b.reactionResponse(evt, "✅")
 	}

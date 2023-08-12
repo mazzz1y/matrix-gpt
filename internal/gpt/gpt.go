@@ -1,14 +1,13 @@
 package gpt
 
 import (
-	"context"
-	"github.com/sashabaranov/go-openai"
 	"time"
+
+	"github.com/sashabaranov/go-openai"
 )
 
 type Gpt struct {
 	client       *openai.Client
-	ctx          context.Context
 	model        string
 	historyLimit int
 	gptTimeout   time.Duration
@@ -20,12 +19,11 @@ type Gpt struct {
 func New(token, gptModel string, historyLimit, gptTimeout, maxAttempts int, userIDs []string) *Gpt {
 	users := make(map[string]*User)
 	for _, id := range userIDs {
-		users[id] = NewGptUser(historyLimit)
+		users[id] = newGptUser(historyLimit)
 	}
 
 	return &Gpt{
 		client:       openai.NewClient(token),
-		ctx:          context.Background(),
 		model:        gptModel,
 		historyLimit: historyLimit,
 		gptTimeout:   time.Duration(gptTimeout) * time.Second,
