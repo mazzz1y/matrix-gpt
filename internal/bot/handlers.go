@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mazzz1y/matrix-gpt/internal/gpt"
 	"github.com/rs/zerolog/log"
@@ -72,9 +71,14 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 		if err == context.Canceled {
 			return
 		}
+		if _, ok := err.(*unknownCommandError); ok {
+			b.reactionResponse(evt, "❌")
+			return
+		}
 		if err != nil {
 			b.reactionResponse(evt, "❌")
 			l.Err(err).Msg("response error")
+			return
 		}
 
 		user.UpdateLastMsgTime()
@@ -85,27 +89,25 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 // sendResponse responds to the user command.
 func (b *Bot) sendResponse(ctx context.Context, user *gpt.User, evt *event.Event) (err error) {
 	user.ReqMutex.Lock()
-	go func() {
-		b.markRead(evt)
-		b.startTyping(evt.RoomID)
-	}()
+	b.markRead(evt)
+	b.startTyping(evt.RoomID)
 	defer b.stopTyping(evt.RoomID)
 	defer user.ReqMutex.Unlock()
 
-	cmd := extractCommand(evt.Content.AsMessage().Body)
+	inputCmd := extractCommand(evt.Content.AsMessage().Body)
 	msg := trimCommand(evt.Content.AsMessage().Body)
 
-	switch cmd {
-	case HelpCommand:
+	switch {
+	case commandIs(inputCmd, helpCommand):
 		err = b.helpResponse(evt.RoomID)
-	case GenerateImageCommand:
+	case commandIs(inputCmd, generateImageCommand):
 		err = b.imageResponse(ctx, evt.RoomID, msg)
-	case HistoryResetCommand:
+	case commandIs(inputCmd, historyResetCommand):
 		err = b.resetResponse(ctx, user, evt, msg)
-	case "":
+	case commandIs(inputCmd, emptyCommand):
 		err = b.completionResponse(ctx, user, evt.RoomID, msg)
 	default:
-		err = fmt.Errorf("command \"!%s\" does not exist", cmd)
+		err = &unknownCommandError{cmd: inputCmd}
 	}
 
 	return err

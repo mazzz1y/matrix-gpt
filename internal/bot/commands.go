@@ -3,9 +3,10 @@ package bot
 import "strings"
 
 const (
-	GenerateImageCommand = "image"
-	HistoryResetCommand  = "reset"
-	HelpCommand          = "help"
+	emptyCommand         = ""
+	generateImageCommand = "image"
+	historyResetCommand  = "reset"
+	helpCommand          = "help"
 )
 
 func extractCommand(s string) (cmd string) {
@@ -24,4 +25,8 @@ func trimCommand(s string) string {
 		return strings.TrimSpace(trimmed)
 	}
 	return s
+}
+
+func commandIs(cmd, in string) bool {
+	return cmd == in || string([]rune(cmd)[0]) == in
 }
