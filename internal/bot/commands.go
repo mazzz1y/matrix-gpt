@@ -1,6 +1,9 @@
 package bot
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 const (
 	emptyCommand         = ""
@@ -8,6 +11,14 @@ const (
 	historyResetCommand  = "reset"
 	helpCommand          = "help"
 )
+
+type unknownCommandError struct {
+	cmd string
+}
+
+func (e *unknownCommandError) Error() string {
+	return fmt.Sprintf("command '!%s' does not exist", e.cmd)
+}
 
 func extractCommand(s string) (cmd string) {
 	if strings.HasPrefix(s, "!") && len(s) > 1 {
@@ -28,5 +39,8 @@ func trimCommand(s string) string {
 }
 
 func commandIs(cmd, in string) bool {
+	if cmd == "" {
+		return in == ""
+	}
 	return cmd == in || string([]rune(cmd)[0]) == in
 }

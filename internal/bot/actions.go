@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/mazzz1y/matrix-gpt/internal/gpt"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
@@ -16,14 +15,26 @@ import (
 	"maunium.net/go/mautrix/id"
 )
 
+const helpMessage = `**Commands**
+- *!image [text]*: Creates an image based on the provided text.
+- *!reset [text]*: Resets the user history. If a text is provided after the reset command, it will generate a GPT response based on this text.
+- *[text]*: If only text is provided, the bot will generate a GPT-based response related to that text.
+
+**Notes**
+- You can use the first letter of a command as an alias. For example, "!i" for "!image".
+- If you wish to terminate the current processing, simply delete your message from the chat.
+- The bot responds with ❌ reaction if there are any errors. Contact the administrator if you see this.
+`
+
 // completionResponse responds to a user message with a GPT-based completion.
-func (b *Bot) completionResponse(ctx context.Context, u *gpt.User, roomID id.RoomID, msg string) error {
-	answer, err := b.gptClient.CreateCompletion(ctx, u, msg)
+func (b *Bot) completionResponse(ctx context.Context, u *user, roomID id.RoomID, msg string) error {
+	newHistory, err := b.gptClient.CreateCompletion(ctx, u.history.getHistory(), msg)
 	if err != nil {
 		return err
 	}
 
-	return b.markdownResponse(roomID, answer)
+	u.history.updateHistory(newHistory)
+	return b.markdownResponse(roomID, newHistory[len(newHistory)-1].Content)
 }
 
 // helpResponse responds with help message.
@@ -74,8 +85,8 @@ func (b *Bot) imageResponse(ctx context.Context, roomID id.RoomID, msg string) e
 
 // resetResponse clears the user's history. If a message is provided, it's processed as a new input.
 // Otherwise, a reaction is sent to indicate successful history reset.
-func (b *Bot) resetResponse(ctx context.Context, u *gpt.User, evt *event.Event, msg string) error {
-	u.History.ResetHistory()
+func (b *Bot) resetResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
+	u.history.resetHistory()
 	if msg != "" {
 		return b.completionResponse(ctx, u, evt.RoomID, msg)
 	} else {

@@ -2,8 +2,8 @@ package bot
 
 import (
 	"context"
+	"time"
 
-	"github.com/mazzz1y/matrix-gpt/internal/gpt"
 	"github.com/rs/zerolog/log"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -15,7 +15,7 @@ func (b *Bot) joinRoomHandler(source mautrix.EventSource, evt *event.Event) {
 		Str("event", "join-room").
 		Str("user-id", evt.Sender.String()).
 		Logger()
-	_, ok := b.gptClient.GetUser(evt.Sender.String())
+	_, ok := b.getUser(evt.Sender.String())
 	if ok &&
 		evt.GetStateKey() == b.client.UserID.String() &&
 		evt.Content.AsMember().Membership == event.MembershipInvite {
@@ -33,15 +33,15 @@ func (b *Bot) redactionHandler(source mautrix.EventSource, evt *event.Event) {
 		Str("user-id", evt.Sender.String()).
 		Logger()
 
-	user, ok := b.gptClient.GetUser(evt.Sender.String())
+	user, ok := b.getUser(evt.Sender.String())
 	if !ok {
 		l.Info().Msg("forbidden")
 		return
 	}
 
-	reqID, ok := user.GetActiveRequestID()
+	reqID, ok := user.getActiveRequestID()
 	if ok && reqID == evt.Redacts.String() {
-		user.CancelRequestContext(reqID)
+		user.cancelRequestContext(reqID)
 		l.Info().Msg("message cancelled")
 	}
 }
@@ -57,15 +57,20 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 		Str("user-id", evt.Sender.String()).
 		Logger()
 
-	user, ok := b.gptClient.GetUser(evt.Sender.String())
+	user, ok := b.getUser(evt.Sender.String())
 	if !ok {
 		l.Info().Msg("forbidden")
 		return
 	}
 
+	if user.getLastMsgTime().Add(b.historyExpire).Before(time.Now()) {
+		user.history.resetHistory()
+		l.Info().Msg("history expired, resetting")
+	}
+
 	go func() {
-		ctx := user.CreateRequestContext(evt.ID.String())
-		defer user.CancelRequestContext(evt.ID.String())
+		ctx := user.createRequestContext(evt.ID.String())
+		defer user.cancelRequestContext(evt.ID.String())
 
 		err := b.sendResponse(*ctx, user, evt)
 		if err == context.Canceled {
@@ -81,34 +86,40 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 			return
 		}
 
-		user.UpdateLastMsgTime()
+		user.updateLastMsgTime()
 		l.Info().Msg("message sent")
 	}()
 }
 
 // sendResponse responds to the user command.
-func (b *Bot) sendResponse(ctx context.Context, user *gpt.User, evt *event.Event) (err error) {
-	user.ReqMutex.Lock()
-	b.markRead(evt)
-	b.startTyping(evt.RoomID)
-	defer b.stopTyping(evt.RoomID)
-	defer user.ReqMutex.Unlock()
+func (b *Bot) sendResponse(ctx context.Context, u *user, e *event.Event) (err error) {
+	u.reqMutex.Lock()
+	b.markRead(e)
+	b.startTyping(e.RoomID)
+	defer b.stopTyping(e.RoomID)
+	defer u.reqMutex.Unlock()
 
-	inputCmd := extractCommand(evt.Content.AsMessage().Body)
-	msg := trimCommand(evt.Content.AsMessage().Body)
+	inputCmd := extractCommand(e.Content.AsMessage().Body)
+	msg := trimCommand(e.Content.AsMessage().Body)
 
 	switch {
-	case commandIs(inputCmd, helpCommand):
-		err = b.helpResponse(evt.RoomID)
-	case commandIs(inputCmd, generateImageCommand):
-		err = b.imageResponse(ctx, evt.RoomID, msg)
-	case commandIs(inputCmd, historyResetCommand):
-		err = b.resetResponse(ctx, user, evt, msg)
-	case commandIs(inputCmd, emptyCommand):
-		err = b.completionResponse(ctx, user, evt.RoomID, msg)
+	case commandIs(helpCommand, inputCmd):
+		err = b.helpResponse(e.RoomID)
+	case commandIs(generateImageCommand, inputCmd):
+		err = b.imageResponse(ctx, e.RoomID, msg)
+	case commandIs(historyResetCommand, inputCmd):
+		err = b.resetResponse(ctx, u, e, msg)
+	case commandIs(emptyCommand, inputCmd):
+		err = b.completionResponse(ctx, u, e.RoomID, msg)
 	default:
 		err = &unknownCommandError{cmd: inputCmd}
 	}
 
 	return err
+}
+
+// getUser retrieves the User instance associated with the given ID.
+func (b *Bot) getUser(id string) (u *user, ok bool) {
+	u, ok = b.users[id]
+	return
 }

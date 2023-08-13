@@ -26,8 +26,8 @@ func run(c *cli.Context) error {
 
 	setLogLevel(logLevel, logType)
 
-	g := gpt.New(openaiToken, gptModel, historyLimit, gptTimeout, maxAttempts, userIDs)
-	m, err := bot.NewBot(mUrl, mUserId, mPassword, sqlitePath, historyExpire, g)
+	g := gpt.New(openaiToken, gptModel, historyLimit, gptTimeout, maxAttempts)
+	m, err := bot.NewBot(mUrl, mUserId, mPassword, sqlitePath, historyExpire, historyLimit, userIDs, g)
 	if err != nil {
 		return err
 	}

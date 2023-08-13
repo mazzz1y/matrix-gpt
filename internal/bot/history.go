@@ -1,4 +1,4 @@
-package gpt
+package bot
 
 import (
 	"sync"
@@ -13,7 +13,7 @@ type historyManager struct {
 	Size    int
 }
 
-// NewHistoryManager initializes a HistoryManager instance with the provided size.
+// newHistoryManager initializes a HistoryManager instance with the provided size.
 func newHistoryManager(size int) *historyManager {
 	return &historyManager{
 		Storage: make([]openai.ChatCompletionMessage, 0),
@@ -21,8 +21,8 @@ func newHistoryManager(size int) *historyManager {
 	}
 }
 
-// ResetHistory clears the current chat history.
-func (m *historyManager) ResetHistory() {
+// resetHistory clears the current chat history.
+func (m *historyManager) resetHistory() {
 	m.Lock()
 	defer m.Unlock()
 
@@ -31,21 +31,17 @@ func (m *historyManager) ResetHistory() {
 	}
 }
 
-// AddMessage appends a new message to the chat history.
-func (m *historyManager) AddMessage(msgType, msgContent string) {
+// addMessage appends a new message to the chat history.
+func (m *historyManager) updateHistory(h []openai.ChatCompletionMessage) {
 	m.Lock()
 	defer m.Unlock()
 
-	message := openai.ChatCompletionMessage{
-		Role:    msgType,
-		Content: msgContent,
-	}
-	m.Storage = append(m.Storage, message)
+	m.Storage = h
 	m.trimHistory()
 }
 
-// GetHistory retrieves the current chat history.
-func (m *historyManager) GetHistory() []openai.ChatCompletionMessage {
+// getHistory retrieves the current chat history.
+func (m *historyManager) getHistory() []openai.ChatCompletionMessage {
 	m.RLock()
 	defer m.RUnlock()
 

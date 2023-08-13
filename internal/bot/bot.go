@@ -16,10 +16,11 @@ type Bot struct {
 	gptClient     *gpt.Gpt
 	selfProfile   mautrix.RespUserProfile
 	historyExpire time.Duration
+	users         map[string]*user
 }
 
 // NewBot initializes a new Matrix bot instance.
-func NewBot(serverUrl, userID, password, sqlitePath string, historyExpire int, gpt *gpt.Gpt) (*Bot, error) {
+func NewBot(serverUrl, userID, password, sqlitePath string, historyExpire, historyLimit int, userIDs []string, gpt *gpt.Gpt) (*Bot, error) {
 	client, err := mautrix.NewClient(serverUrl, "", "")
 	if err != nil {
 		return nil, err
@@ -50,14 +51,20 @@ func NewBot(serverUrl, userID, password, sqlitePath string, historyExpire int, g
 		Str("matrix-username", profile.DisplayName).
 		Str("gpt-model", gpt.GetModel()).
 		Float64("gpt-timeout", gpt.GetTimeout().Seconds()).
-		Int("history-limit", gpt.GetHistoryLimit()).
+		Int("history-limit", historyLimit).
 		Int("history-expire", historyExpire).
 		Msg("connected to matrix")
+
+	users := make(map[string]*user)
+	for _, id := range userIDs {
+		users[id] = newGptUser(historyLimit)
+	}
 
 	return &Bot{
 		client:        client,
 		gptClient:     gpt,
 		selfProfile:   *profile,
+		users:         users,
 		historyExpire: time.Duration(historyExpire) * time.Hour,
 	}, nil
 }

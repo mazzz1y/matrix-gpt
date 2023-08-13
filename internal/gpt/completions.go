@@ -7,25 +7,24 @@ import (
 )
 
 // CreateCompletion retrieves a completion from GPT using the given user's message.
-func (g *Gpt) CreateCompletion(ctx context.Context, u *User, userMsg string) (string, error) {
+func (g *Gpt) CreateCompletion(ctx context.Context, history []openai.ChatCompletionMessage, userMsg string) ([]openai.ChatCompletionMessage, error) {
 	// Append the user's message to the existing history.
-	messageHistory := append(u.History.GetHistory(), openai.ChatCompletionMessage{
+	messageHistory := append(history, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
 		Content: userMsg,
 	})
 
-	var response openai.ChatCompletionResponse
-	var err error
-	response, err = g.createCompletionWithTimeout(ctx, messageHistory)
+	response, err := g.createCompletionWithTimeout(ctx, messageHistory)
 	if err != nil {
-		return "", err
+		return []openai.ChatCompletionMessage{}, err
 	}
 
-	// Update the user's history with both the user message and the assistant's response.
-	u.History.AddMessage(openai.ChatMessageRoleUser, userMsg)
-	u.History.AddMessage(openai.ChatMessageRoleAssistant, response.Choices[0].Message.Content)
+	messageHistory = append(messageHistory, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleAssistant,
+		Content: response.Choices[0].Message.Content,
+	})
 
-	return response.Choices[0].Message.Content, err
+	return messageHistory, err
 }
 
 // createCompletionWithTimeout makes a request to get a GPT completion with a specified timeout.
