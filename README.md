@@ -3,8 +3,6 @@
 Matrix GPT is a Matrix chatbot that uses OpenAI for real-time chatting.
 
 ![](./.github/img.png)
-## Installation
-
 ### Docker
 
 Run the Docker container:
@@ -39,20 +37,14 @@ information.
 
 ## Usage
 
-Follow these simple steps to interact with the bot:
+This bot supports the following commands:
 
-1. **Add the bot to your contact list.**
+- `!image [text]`: This command will create and return an image based on the text you provide.
+- `!reset [text]`: This command will reset the user's history. If you provide text after the `!reset` command, the bot generates a response using GPT, based on this input text.
+- `[text]`: If you simply input text without any specific command, the bot will automatically generate a GPT-based response related to the text provided.
 
-   After the bot has been added, begin your interaction by sending your questions, commands or comments.
+### Additional Notes
 
-2. **Send commands.**
-
-   You can use the following commands to communicate with the bot:
-
-   - **Generate an Image:** `!image [text]` - This command creates an image based on the provided text.
-   - **Reset User History:** `!reset [text]` - This command resets the user's command history. If text is provided following the reset command, the bot will generate a GPT-based response based on this text.
-   - **Send a Text Message:** `[text]` - Send any text to the bot and it will generate a GPT-based response relevant to your text.
-
-3. **Identify error responses.**
-
-   If there are any errors in processing your requests or commands, the bot will respond with a ❌ reaction.
+- You can implement shortcuts for each command by using the first letter of the command as an alias. For example, `!i` can be used in place of the `!image` command.
+- If you need to stop any ongoing processing, you can just delete your message from the chat.
+- In case of errors, the bot reacts with a ❌. If you notice this, please check logs.
