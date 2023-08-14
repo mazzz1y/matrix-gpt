@@ -1,12 +1,14 @@
-FROM golang:1.20 as build
+FROM golang:1.21 as build
 
 ENV CGO_ENABLED 1
 RUN apt-get update && apt-get install -y libolm-dev && \
   rm -rf /var/lib/apt/lists/*
 
 COPY . /app
+
+ARG VERSION
 RUN cd /app && \
-  go build -ldflags="-s -w" -trimpath -o /matrix-gpt ./cmd/matrix-gpt
+  go build -ldflags="-s -w -X main.version=$VERSION" -trimpath -o /matrix-gpt ./cmd/matrix-gpt
 
 FROM ubuntu:22.04
 RUN apt-get update && \

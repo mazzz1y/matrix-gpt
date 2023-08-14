@@ -38,7 +38,7 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ env.GIT_TAG }}
           build-args: |
-            BUILD_TAG=${{ env.GIT_TAG }}
+            VERSION=${{ env.GIT_TAG }}
 
       - name: Build and push Docker image with latest
         if: github.ref == 'refs/heads/master'
