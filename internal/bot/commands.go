@@ -5,13 +5,6 @@ import (
 	"strings"
 )
 
-const (
-	emptyCommand         = ""
-	generateImageCommand = "image"
-	historyResetCommand  = "reset"
-	helpCommand          = "help"
-)
-
 type unknownCommandError struct {
 	cmd string
 }
@@ -36,11 +29,4 @@ func trimCommand(s string) string {
 		return strings.TrimSpace(trimmed)
 	}
 	return s
-}
-
-func commandIs(cmd, in string) bool {
-	if cmd == "" {
-		return in == ""
-	}
-	return cmd == in || string([]rune(cmd)[0]) == in
 }

@@ -64,7 +64,7 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 	}
 
 	if user.getLastMsgTime().Add(b.historyExpire).Before(time.Now()) {
-		user.history.resetHistory()
+		user.history.reset()
 		l.Info().Msg("history expired, resetting")
 	}
 
@@ -99,23 +99,15 @@ func (b *Bot) sendResponse(ctx context.Context, u *user, e *event.Event) (err er
 	defer b.stopTyping(e.RoomID)
 	defer u.reqMutex.Unlock()
 
-	inputCmd := extractCommand(e.Content.AsMessage().Body)
+	cmd := extractCommand(e.Content.AsMessage().Body)
 	msg := trimCommand(e.Content.AsMessage().Body)
 
-	switch {
-	case commandIs(helpCommand, inputCmd):
-		err = b.helpResponse(e.RoomID)
-	case commandIs(generateImageCommand, inputCmd):
-		err = b.imageResponse(ctx, e.RoomID, msg)
-	case commandIs(historyResetCommand, inputCmd):
-		err = b.resetResponse(ctx, u, e, msg)
-	case commandIs(emptyCommand, inputCmd):
-		err = b.completionResponse(ctx, u, e.RoomID, msg)
-	default:
-		err = &unknownCommandError{cmd: inputCmd}
+	action, err := b.getAction(cmd)
+	if err != nil {
+		return err
 	}
 
-	return err
+	return action(ctx, u, e, msg)
 }
 
 // getUser retrieves the User instance associated with the given ID.

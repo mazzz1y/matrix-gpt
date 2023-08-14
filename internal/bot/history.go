@@ -21,8 +21,8 @@ func newHistoryManager(size int) *historyManager {
 	}
 }
 
-// resetHistory clears the current chat history.
-func (m *historyManager) resetHistory() {
+// reset clears the current chat history.
+func (m *historyManager) reset() {
 	m.Lock()
 	defer m.Unlock()
 
@@ -31,26 +31,22 @@ func (m *historyManager) resetHistory() {
 	}
 }
 
-// addMessage appends a new message to the chat history.
-func (m *historyManager) updateHistory(h []openai.ChatCompletionMessage) {
+// save keeps the last 'm.Size' messages in memory.
+func (m *historyManager) save(h []openai.ChatCompletionMessage) {
 	m.Lock()
 	defer m.Unlock()
 
-	m.Storage = h
-	m.trimHistory()
+	if len(h) > m.Size {
+		m.Storage = h[len(h)-m.Size:]
+	} else {
+		m.Storage = h
+	}
 }
 
-// getHistory retrieves the current chat history.
-func (m *historyManager) getHistory() []openai.ChatCompletionMessage {
+// get retrieves the current chat history.
+func (m *historyManager) get() []openai.ChatCompletionMessage {
 	m.RLock()
 	defer m.RUnlock()
 
 	return m.Storage
-}
-
-// trimHistory ensures the chat history doesn't exceed its size limit.
-func (m *historyManager) trimHistory() {
-	if len(m.Storage) > m.Size {
-		m.Storage = m.Storage[len(m.Storage)-m.Size:]
-	}
 }

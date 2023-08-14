@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"io"
 	"net/http"
+	"strings"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
@@ -26,24 +27,56 @@ const helpMessage = `**Commands**
 - The bot responds with ❌ reaction if there are any errors. Contact the administrator if you see this.
 `
 
+type action func(context.Context, *user, *event.Event, string) error
+
+// initBotActions is used to set up the possible actions the Bot can handle.
+// This method should be called during the bot initialization process.
+func (b *Bot) initBotActions() {
+	b.actions = map[string]action{
+		"":      b.completionResponse,
+		"image": b.imageResponse,
+		"reset": b.resetResponse,
+		"help":  b.helpResponse,
+	}
+}
+
+// getAction matches an input string to a bot action.
+// It returns an exact match, the longest prefix match, or an unknownCommandError if no match is found.
+func (b *Bot) getAction(input string) (action, error) {
+	var bestMatch string
+	for name := range b.actions {
+		if input == name {
+			return b.actions[input], nil
+		}
+		if strings.HasPrefix(name, input) && len(name) > len(bestMatch) {
+			bestMatch = name
+		}
+	}
+	if bestMatch == "" {
+		return nil, &unknownCommandError{cmd: input}
+	}
+
+	return b.actions[bestMatch], nil
+}
+
 // completionResponse responds to a user message with a GPT-based completion.
-func (b *Bot) completionResponse(ctx context.Context, u *user, roomID id.RoomID, msg string) error {
-	newHistory, err := b.gptClient.CreateCompletion(ctx, u.history.getHistory(), msg)
+func (b *Bot) completionResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
+	newHistory, err := b.gptClient.CreateCompletion(ctx, u.history.get(), msg)
 	if err != nil {
 		return err
 	}
 
-	u.history.updateHistory(newHistory)
-	return b.markdownResponse(roomID, newHistory[len(newHistory)-1].Content)
+	u.history.save(newHistory)
+	return b.markdownResponse(evt.RoomID, newHistory[len(newHistory)-1].Content)
 }
 
 // helpResponse responds with help message.
-func (b *Bot) helpResponse(roomID id.RoomID) error {
-	return b.markdownResponse(roomID, helpMessage)
+func (b *Bot) helpResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
+	return b.markdownResponse(evt.RoomID, helpMessage)
 }
 
 // imageResponse responds to the user message with a DALL-E created image.
-func (b *Bot) imageResponse(ctx context.Context, roomID id.RoomID, msg string) error {
+func (b *Bot) imageResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
 	img, err := b.gptClient.CreateImage(ctx, msg)
 	if err != nil {
 		return err
@@ -79,16 +112,16 @@ func (b *Bot) imageResponse(ctx context.Context, roomID id.RoomID, msg string) e
 		URL:           upload.ContentURI.CUString(),
 	}
 
-	_, err = b.client.SendMessageEvent(roomID, event.EventMessage, content)
+	_, err = b.client.SendMessageEvent(evt.RoomID, event.EventMessage, content)
 	return err
 }
 
 // resetResponse clears the user's history. If a message is provided, it's processed as a new input.
 // Otherwise, a reaction is sent to indicate successful history reset.
 func (b *Bot) resetResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
-	u.history.resetHistory()
+	u.history.reset()
 	if msg != "" {
-		return b.completionResponse(ctx, u, evt.RoomID, msg)
+		return b.completionResponse(ctx, u, evt, msg)
 	} else {
 		b.reactionResponse(evt, "✅")
 	}

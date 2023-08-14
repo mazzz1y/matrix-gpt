@@ -17,6 +17,7 @@ type Bot struct {
 	selfProfile   mautrix.RespUserProfile
 	historyExpire time.Duration
 	users         map[string]*user
+	actions       map[string]action
 }
 
 // NewBot initializes a new Matrix bot instance.
@@ -71,6 +72,8 @@ func NewBot(serverUrl, userID, password, sqlitePath string, historyExpire, histo
 
 // StartHandler initializes bot event handlers and starts the matrix client sync.
 func (b *Bot) StartHandler() error {
+	b.initBotActions()
+
 	syncer := b.client.Syncer.(*mautrix.DefaultSyncer)
 	syncer.OnEventType(event.EventMessage, b.messageHandler)
 	syncer.OnEventType(event.EventRedaction, b.redactionHandler)
