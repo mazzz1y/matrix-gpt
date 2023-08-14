@@ -11,11 +11,12 @@ import (
 
 // joinRoomHandler handles when the bot is invited to a room.
 func (b *Bot) joinRoomHandler(source mautrix.EventSource, evt *event.Event) {
+	userID := evt.Sender.String()
 	l := log.With().
 		Str("event", "join-room").
-		Str("user-id", evt.Sender.String()).
+		Str("user-id", userID).
 		Logger()
-	_, ok := b.getUser(evt.Sender.String())
+	_, ok := b.users[userID]
 	if ok &&
 		evt.GetStateKey() == b.client.UserID.String() &&
 		evt.Content.AsMember().Membership == event.MembershipInvite {
@@ -28,12 +29,13 @@ func (b *Bot) joinRoomHandler(source mautrix.EventSource, evt *event.Event) {
 
 // redactionHandler handles when a previous message is redacted (deleted).
 func (b *Bot) redactionHandler(source mautrix.EventSource, evt *event.Event) {
+	userID := evt.Sender.String()
 	l := log.With().
 		Str("event", "redaction").
-		Str("user-id", evt.Sender.String()).
+		Str("user-id", userID).
 		Logger()
 
-	user, ok := b.getUser(evt.Sender.String())
+	user, ok := b.users[userID]
 	if !ok {
 		l.Info().Msg("forbidden")
 		return
@@ -48,16 +50,17 @@ func (b *Bot) redactionHandler(source mautrix.EventSource, evt *event.Event) {
 
 // messageHandler handles incoming messages based on their type.
 func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
-	if b.client.UserID.String() == evt.Sender.String() {
+	userID := evt.Sender.String()
+	if b.client.UserID.String() == userID {
 		return
 	}
 
 	l := log.With().
 		Str("event", "message").
-		Str("user-id", evt.Sender.String()).
+		Str("user-id", userID).
 		Logger()
 
-	user, ok := b.getUser(evt.Sender.String())
+	user, ok := b.users[userID]
 	if !ok {
 		l.Info().Msg("forbidden")
 		return
@@ -69,8 +72,8 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 	}
 
 	go func() {
-		ctx := user.createRequestContext(evt.ID.String())
-		defer user.cancelRequestContext(evt.ID.String())
+		ctx := user.createRequestContext(userID)
+		defer user.cancelRequestContext(userID)
 
 		err := b.sendResponse(*ctx, user, evt)
 		if err == context.Canceled {
@@ -99,8 +102,9 @@ func (b *Bot) sendResponse(ctx context.Context, u *user, e *event.Event) (err er
 	defer b.stopTyping(e.RoomID)
 	defer u.reqMutex.Unlock()
 
-	cmd := extractCommand(e.Content.AsMessage().Body)
-	msg := trimCommand(e.Content.AsMessage().Body)
+	body := e.Content.AsMessage().Body
+	cmd := extractCommand(body)
+	msg := trimCommand(body)
 
 	action, err := b.getAction(cmd)
 	if err != nil {
@@ -108,10 +112,4 @@ func (b *Bot) sendResponse(ctx context.Context, u *user, e *event.Event) (err er
 	}
 
 	return action(ctx, u, e, msg)
-}
-
-// getUser retrieves the User instance associated with the given ID.
-func (b *Bot) getUser(id string) (u *user, ok bool) {
-	u, ok = b.users[id]
-	return
 }
