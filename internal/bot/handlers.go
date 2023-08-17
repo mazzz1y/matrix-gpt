@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/sashabaranov/go-openai"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 )
@@ -79,18 +80,14 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 		if err == context.Canceled {
 			return
 		}
-		if _, ok := err.(*unknownCommandError); ok {
-			b.reactionResponse(evt, "❌")
-			return
-		}
 		if err != nil {
-			b.reactionResponse(evt, "❌")
+			b.err(evt, err)
 			l.Err(err).Msg("response error")
 			return
 		}
 
 		user.updateLastMsgTime()
-		l.Info().Msg("message sent")
+		l.Info().Msg("response sent")
 	}()
 }
 
@@ -112,4 +109,14 @@ func (b *Bot) sendResponse(ctx context.Context, u *user, e *event.Event) (err er
 	}
 
 	return action(ctx, u, e, msg)
+}
+
+// err is a helper function to process specific error types.
+func (b *Bot) err(evt *event.Event, err error) {
+	switch t := err.(type) {
+	case *unknownCommandError:
+		b.markdownResponse(evt, true, errorMessage)
+	case *openai.APIError:
+		b.markdownResponse(evt, true, t.Message)
+	}
 }

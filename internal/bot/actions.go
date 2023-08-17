@@ -16,17 +16,6 @@ import (
 	"maunium.net/go/mautrix/id"
 )
 
-const helpMessage = `**Commands**
-- *!image [text]*: Creates an image based on the provided text.
-- *!reset [text]*: Resets the user history. If a text is provided after the reset command, it will generate a GPT response based on this text.
-- *[text]*: If only text is provided, the bot will generate a GPT-based response related to that text.
-
-**Notes**
-- You can use the first letter of a command as an alias. For example, "!i" for "!image".
-- If you wish to terminate the current processing, simply delete your message from the chat.
-- The bot responds with ❌ reaction if there are any errors. Contact the administrator if you see this.
-`
-
 type action func(context.Context, *user, *event.Event, string) error
 
 // initBotActions is used to set up the possible actions the Bot can handle.
@@ -67,12 +56,12 @@ func (b *Bot) completionResponse(ctx context.Context, u *user, evt *event.Event,
 	}
 
 	u.history.save(newHistory)
-	return b.markdownResponse(evt.RoomID, newHistory[len(newHistory)-1].Content)
+	return b.markdownResponse(evt, false, newHistory[len(newHistory)-1].Content)
 }
 
 // helpResponse responds with help message.
 func (b *Bot) helpResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
-	return b.markdownResponse(evt.RoomID, helpMessage)
+	return b.markdownResponse(evt, false, helpMessage)
 }
 
 // imageResponse responds to the user message with a DALL-E created image.
@@ -129,9 +118,12 @@ func (b *Bot) resetResponse(ctx context.Context, u *user, evt *event.Event, msg 
 }
 
 // markdownResponse sends a message response in markdown format.
-func (b *Bot) markdownResponse(roomID id.RoomID, msg string) error {
+func (b *Bot) markdownResponse(evt *event.Event, reply bool, msg string) error {
 	formattedMsg := format.RenderMarkdown(msg, true, false)
-	_, err := b.client.SendMessageEvent(roomID, event.EventMessage, &formattedMsg)
+	if reply {
+		formattedMsg.SetReply(evt)
+	}
+	_, err := b.client.SendMessageEvent(evt.RoomID, event.EventMessage, &formattedMsg)
 	return err
 }
 
