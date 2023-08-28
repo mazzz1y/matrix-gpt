@@ -51,7 +51,7 @@ func main() {
 				Name:    "history-limit",
 				Usage:   "Maximum number of history entries",
 				EnvVars: []string{"HISTORY_LIMIT"},
-				Value:   0,
+				Value:   5,
 			},
 			&cli.IntFlag{
 				Name:    "history-expire",
@@ -69,13 +69,13 @@ func main() {
 				Name:    "gpt-timeout",
 				Usage:   "Time to wait for a GPT response (in seconds)",
 				EnvVars: []string{"GPT_TIMEOUT"},
-				Value:   180,
+				Value:   35,
 			},
 			&cli.IntFlag{
 				Name:    "max-attempts",
-				Usage:   "Maximum number of retry attempts for GPT",
+				Usage:   "Maximum number of attempts for GPT requests",
 				EnvVars: []string{"MAX_ATTEMPTS"},
-				Value:   3,
+				Value:   1,
 			},
 			&cli.StringSliceFlag{
 				Name:     "user-ids",

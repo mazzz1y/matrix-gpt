@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -115,8 +116,12 @@ func (b *Bot) sendResponse(ctx context.Context, u *user, e *event.Event) (err er
 func (b *Bot) err(evt *event.Event, err error) {
 	switch t := err.(type) {
 	case *unknownCommandError:
-		b.markdownResponse(evt, true, errorMessage)
+		b.markdownResponse(evt, true, unknownCommandMsg)
 	case *openai.APIError:
 		b.markdownResponse(evt, true, t.Message)
+	default:
+		if errors.Is(err, context.DeadlineExceeded) {
+			b.markdownResponse(evt, true, timeoutMsg)
+		}
 	}
 }

@@ -61,7 +61,7 @@ func (b *Bot) completionResponse(ctx context.Context, u *user, evt *event.Event,
 
 // helpResponse responds with help message.
 func (b *Bot) helpResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
-	return b.markdownResponse(evt, false, helpMessage)
+	return b.markdownResponse(evt, false, helpMsg)
 }
 
 // imageResponse responds to the user message with a DALL-E created image.
@@ -123,6 +123,7 @@ func (b *Bot) markdownResponse(evt *event.Event, reply bool, msg string) error {
 	if reply {
 		formattedMsg.SetReply(evt)
 	}
+
 	_, err := b.client.SendMessageEvent(evt.RoomID, event.EventMessage, &formattedMsg)
 	return err
 }
