@@ -9,7 +9,8 @@ const (
 **Notes**
 - You can use the first letter of a command as an alias. For example, "!i" for "!image".
 - If you wish to terminate the current processing, simply delete your message from the chat.
+- The bot responds with ❌ reaction if there are any errors. Contact the administrator if you see this.
 `
 	timeoutMsg        = "Timeout error. Please try again. If issue persists, contact the administrator."
-	unknownCommandMsg = "Unknown command. Please use the `!help` command to access the available commands"
+	unknownCommandMsg = "Unknown command. Please use the `!help` command to access the available commands."
 )

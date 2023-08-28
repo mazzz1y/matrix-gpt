@@ -122,6 +122,8 @@ func (b *Bot) err(evt *event.Event, err error) {
 	default:
 		if errors.Is(err, context.DeadlineExceeded) {
 			b.markdownResponse(evt, true, timeoutMsg)
+		} else {
+			b.reactionResponse(evt, "❌")
 		}
 	}
 }

@@ -69,13 +69,13 @@ func main() {
 				Name:    "gpt-timeout",
 				Usage:   "Time to wait for a GPT response (in seconds)",
 				EnvVars: []string{"GPT_TIMEOUT"},
-				Value:   35,
+				Value:   60,
 			},
 			&cli.IntFlag{
 				Name:    "max-attempts",
 				Usage:   "Maximum number of attempts for GPT requests",
 				EnvVars: []string{"MAX_ATTEMPTS"},
-				Value:   1,
+				Value:   3,
 			},
 			&cli.StringSliceFlag{
 				Name:     "user-ids",

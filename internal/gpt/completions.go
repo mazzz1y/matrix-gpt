@@ -61,7 +61,7 @@ func (g *Gpt) createCompletionWithTimeout(ctx context.Context, msg []openai.Chat
 			continue
 		}
 
-		time.Sleep(time.Duration(i*2) * time.Second)
+		time.Sleep(time.Duration(i*3) * time.Second)
 	}
 
 	return openai.ChatCompletionResponse{}, err
