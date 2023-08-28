@@ -73,8 +73,8 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 	}
 
 	go func() {
-		ctx := user.createRequestContext(userID)
-		defer user.cancelRequestContext(userID)
+		ctx := user.createRequestContext(evt.ID.String())
+		defer user.cancelRequestContext(evt.ID.String())
 
 		err := b.sendResponse(*ctx, user, evt)
 		if err == context.Canceled {
@@ -87,7 +87,7 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 		}
 
 		user.updateLastMsgTime()
-		l.Info().Msg("response sent")
+		l.Info().Int("history-size", user.history.getSize()).Msg("response sent")
 	}()
 }
 

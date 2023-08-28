@@ -9,15 +9,15 @@ import (
 // historyManager manages chat histories for GPT interactions.
 type historyManager struct {
 	sync.RWMutex
-	Storage []openai.ChatCompletionMessage
-	Size    int
+	storage []openai.ChatCompletionMessage
+	maxSize int
 }
 
 // newHistoryManager initializes a HistoryManager instance with the provided size.
-func newHistoryManager(size int) *historyManager {
+func newHistoryManager(maxSize int) *historyManager {
 	return &historyManager{
-		Storage: make([]openai.ChatCompletionMessage, 0),
-		Size:    size,
+		storage: make([]openai.ChatCompletionMessage, 0),
+		maxSize: maxSize,
 	}
 }
 
@@ -26,8 +26,8 @@ func (m *historyManager) reset() {
 	m.Lock()
 	defer m.Unlock()
 
-	if len(m.Storage) > 0 {
-		m.Storage = make([]openai.ChatCompletionMessage, 0)
+	if len(m.storage) > 0 {
+		m.storage = make([]openai.ChatCompletionMessage, 0)
 	}
 }
 
@@ -36,10 +36,10 @@ func (m *historyManager) save(h []openai.ChatCompletionMessage) {
 	m.Lock()
 	defer m.Unlock()
 
-	if len(h) > m.Size {
-		m.Storage = h[len(h)-m.Size:]
+	if m.maxSize != 0 && len(h) > m.maxSize {
+		m.storage = h[len(h)-m.maxSize:]
 	} else {
-		m.Storage = h
+		m.storage = h
 	}
 }
 
@@ -48,5 +48,13 @@ func (m *historyManager) get() []openai.ChatCompletionMessage {
 	m.RLock()
 	defer m.RUnlock()
 
-	return m.Storage
+	return m.storage
+}
+
+// getSize retrieves the current history size.
+func (m *historyManager) getSize() int {
+	m.RLock()
+	defer m.RUnlock()
+
+	return len(m.storage)
 }

@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
-	"os"
 )
 
 var version = "git"
@@ -50,7 +51,7 @@ func main() {
 				Name:    "history-limit",
 				Usage:   "Maximum number of history entries",
 				EnvVars: []string{"HISTORY_LIMIT"},
-				Value:   5,
+				Value:   0,
 			},
 			&cli.IntFlag{
 				Name:    "history-expire",
