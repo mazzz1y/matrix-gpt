@@ -46,7 +46,7 @@ func (b *Bot) redactionHandler(source mautrix.EventSource, evt *event.Event) {
 	reqID, ok := user.getActiveRequestID()
 	if ok && reqID == evt.Redacts.String() {
 		user.cancelRequestContext(reqID)
-		l.Debug().Msg("message cancelled")
+		l.Debug().Msg("request cancelled")
 	}
 }
 
@@ -67,10 +67,10 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 		l.Debug().Msg("forbidden")
 		return
 	}
-
+	l.Debug().Msg("received request, processing")
 	if user.getLastMsgTime().Add(b.historyExpire).Before(time.Now()) {
+		l.Debug().Msg("history expired, resetting before processing")
 		user.history.reset()
-		l.Debug().Msg("history expired, resetting")
 	}
 
 	go func() {
