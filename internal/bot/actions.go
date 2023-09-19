@@ -66,12 +66,12 @@ func (b *Bot) helpResponse(ctx context.Context, u *user, evt *event.Event, msg s
 
 // imageResponse responds to the user message with a DALL-E created image.
 func (b *Bot) imageResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
-	img, err := b.gptClient.CreateImage(ctx, msg)
+	url, err := b.gptClient.CreateImage(ctx, msg)
 	if err != nil {
 		return err
 	}
 
-	imageBytes, err := getImageBytesFromURL(img.Data[0].URL)
+	imageBytes, err := getImageBytesFromURL(url)
 	if err != nil {
 		return err
 	}

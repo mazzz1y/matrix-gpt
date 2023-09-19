@@ -2,12 +2,13 @@ package gpt
 
 import (
 	"context"
+	"errors"
 
 	"github.com/sashabaranov/go-openai"
 )
 
 // CreateImage makes a request to get a DALL-E image URL.
-func (g *Gpt) CreateImage(ctx context.Context, prompt string) (openai.ImageResponse, error) {
+func (g *Gpt) CreateImage(ctx context.Context, prompt string) (string, error) {
 	var res openai.ImageResponse
 	var err error
 
@@ -25,7 +26,7 @@ func (g *Gpt) CreateImage(ctx context.Context, prompt string) (openai.ImageRespo
 		)
 
 		if ctx.Err() == context.Canceled {
-			return res, ctx.Err()
+			return "", ctx.Err()
 		} else if !isServiceUnavailableError(err) {
 			break
 		}
@@ -33,5 +34,9 @@ func (g *Gpt) CreateImage(ctx context.Context, prompt string) (openai.ImageRespo
 		sleepBeforeRetry(i)
 	}
 
-	return openai.ImageResponse{}, err
+	if len(res.Data) < 1 {
+		return "", errors.New("empty response")
+	}
+
+	return res.Data[0].URL, err
 }

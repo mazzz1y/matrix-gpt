@@ -2,6 +2,7 @@ package gpt
 
 import (
 	"context"
+	"errors"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -21,14 +22,14 @@ func (g *Gpt) CreateCompletion(ctx context.Context, history []openai.ChatComplet
 
 	messageHistory = append(messageHistory, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleAssistant,
-		Content: res.Choices[0].Message.Content,
+		Content: res,
 	})
 
 	return messageHistory, err
 }
 
 // complReqWithTimeout makes a request to get a GPT completion with a specified timeout.
-func (g *Gpt) complReqWithTimeout(ctx context.Context, msg []openai.ChatCompletionMessage) (openai.ChatCompletionResponse, error) {
+func (g *Gpt) complReqWithTimeout(ctx context.Context, msg []openai.ChatCompletionMessage) (string, error) {
 	var res openai.ChatCompletionResponse
 	var err error
 
@@ -45,7 +46,7 @@ func (g *Gpt) complReqWithTimeout(ctx context.Context, msg []openai.ChatCompleti
 		)
 
 		if ctx.Err() == context.Canceled {
-			return res, ctx.Err()
+			return "", ctx.Err()
 		} else if isTokenExceededError(err) {
 			msg = trimFirstMsgFromHistory(msg)
 		} else if !isServiceUnavailableError(err) {
@@ -55,7 +56,11 @@ func (g *Gpt) complReqWithTimeout(ctx context.Context, msg []openai.ChatCompleti
 		sleepBeforeRetry(i)
 	}
 
-	return res, err
+	if len(res.Choices) < 1 {
+		return "", errors.New("empty response")
+	}
+
+	return res.Choices[0].Message.Content, err
 }
 
 func trimFirstMsgFromHistory(msg []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
