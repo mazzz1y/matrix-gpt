@@ -3,12 +3,15 @@ package bot
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"image"
 	"image/png"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
+	"github.com/h2non/filetype"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/crypto/attachment"
 	"maunium.net/go/mautrix/event"
@@ -49,7 +52,23 @@ func (b *Bot) getAction(input string) (action, error) {
 }
 
 // completionResponse responds to a user message with a GPT-based completion.
+// If the message is audio, it transcribes it before generating the response.
 func (b *Bot) completionResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
+	if evt.Content.AsMessage().MsgType == event.MsgAudio {
+		fname, err := b.decryptAndStoreFile(evt)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(fname)
+
+		text, err := b.gptClient.CreateTranscription(ctx, fname)
+		if err != nil {
+			return err
+		}
+
+		msg = text
+	}
+
 	newHistory, err := b.gptClient.CreateCompletion(ctx, u.history.get(), msg)
 	if err != nil {
 		return err
@@ -175,4 +194,51 @@ func getImageBytesFromURL(url string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// decryptAndStoreFile decrypts a file from an event and stores it locally in temp dir, returning the local file name.
+func (b *Bot) decryptAndStoreFile(evt *event.Event) (string, error) {
+	file := evt.Content.AsMessage().File
+
+	if file == nil {
+		return "", fmt.Errorf("no file found in message")
+	}
+
+	mxc, err := file.URL.Parse()
+	if err != nil {
+		return "", err
+	}
+
+	data, err := b.client.DownloadBytes(mxc)
+	if err != nil {
+		return "", err
+	}
+
+	err = file.DecryptInPlace(data)
+	if err != nil {
+		return "", err
+	}
+
+	return storeFile(data)
+}
+
+// storeFile stores a given byte slice as a file in a temporary directory and returns the generated file name.
+func storeFile(data []byte) (fname string, err error) {
+	ext, err := filetype.Match(data)
+	if err != nil {
+		return "", err
+	}
+
+	tempFile, err := os.CreateTemp("", "*."+ext.Extension)
+	if err != nil {
+		return "", err
+	}
+	defer tempFile.Close()
+
+	_, err = tempFile.Write(data)
+	if err != nil {
+		return "", err
+	}
+
+	return tempFile.Name(), nil
 }

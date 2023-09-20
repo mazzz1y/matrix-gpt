@@ -3,6 +3,7 @@ module github.com/mazzz1y/matrix-gpt
 go 1.20
 
 require (
+	github.com/h2non/filetype v1.1.3
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/rs/zerolog v1.30.0
 	github.com/sashabaranov/go-openai v1.15.3
