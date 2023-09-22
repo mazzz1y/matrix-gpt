@@ -20,12 +20,10 @@ func (g *Gpt) CreateCompletion(ctx context.Context, history []openai.ChatComplet
 		return []openai.ChatCompletionMessage{}, err
 	}
 
-	messageHistory = append(messageHistory, openai.ChatCompletionMessage{
+	return append(messageHistory, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleAssistant,
 		Content: res,
-	})
-
-	return messageHistory, err
+	}), err
 }
 
 // complReqWithTimeout makes a request to get a GPT completion with a specified timeout.

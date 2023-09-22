@@ -68,7 +68,10 @@ func (b *Bot) messageHandler(source mautrix.EventSource, evt *event.Event) {
 		return
 	}
 	l.Debug().Msg("received request, processing")
-	if user.getLastMsgTime().Add(b.historyExpire).Before(time.Now()) {
+
+	histExpired := user.getLastMsgTime().Add(b.historyExpire).Before(time.Now())
+	histSize := user.history.getSize()
+	if histExpired && histSize != 0 {
 		l.Debug().Msg("history expired, resetting before processing")
 		user.history.reset()
 	}
