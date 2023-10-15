@@ -47,7 +47,7 @@ func (g *Gpt) complReqWithTimeout(ctx context.Context, msg []openai.ChatCompleti
 			return "", ctx.Err()
 		} else if isTokenExceededError(err) {
 			msg = trimFirstMsgFromHistory(msg)
-		} else if !isServiceUnavailableError(err) {
+		} else if !isServiceUnavailableError(err) && len(res.Choices) > 0 {
 			break
 		}
 
