@@ -25,10 +25,11 @@ type action func(context.Context, *user, *event.Event, string) error
 // This method should be called during the bot initialization process.
 func (b *Bot) initBotActions() {
 	b.actions = map[string]action{
-		"":      b.completionResponse,
-		"image": b.imageResponse,
-		"reset": b.resetResponse,
-		"help":  b.helpResponse,
+		"":              b.completionResponse,
+		"image-natural": b.imageResponse("natural"),
+		"image-vivid":   b.imageResponse("vivid"),
+		"reset":         b.resetResponse,
+		"help":          b.helpResponse,
 	}
 }
 
@@ -37,13 +38,15 @@ func (b *Bot) initBotActions() {
 func (b *Bot) getAction(input string) (action, error) {
 	var bestMatch string
 	for name := range b.actions {
-		if input == name {
-			return b.actions[input], nil
+		if input == name || isAbbreviation(input, name) {
+			return b.actions[name], nil
 		}
+
 		if strings.HasPrefix(name, input) && len(name) > len(bestMatch) {
 			bestMatch = name
 		}
 	}
+
 	if bestMatch == "" {
 		return nil, &unknownCommandError{cmd: input}
 	}
@@ -84,44 +87,46 @@ func (b *Bot) helpResponse(ctx context.Context, u *user, evt *event.Event, msg s
 }
 
 // imageResponse responds to the user message with a DALL-E created image.
-func (b *Bot) imageResponse(ctx context.Context, u *user, evt *event.Event, msg string) error {
-	url, err := b.gptClient.CreateImage(ctx, msg)
-	if err != nil {
+func (b *Bot) imageResponse(style string) action {
+	return func(ctx context.Context, u *user, evt *event.Event, msg string) error {
+		url, err := b.gptClient.CreateImage(ctx, style, msg)
+		if err != nil {
+			return err
+		}
+
+		imageBytes, err := getImageBytesFromURL(url)
+		if err != nil {
+			return err
+		}
+
+		cfg, err := png.DecodeConfig(bytes.NewReader(imageBytes))
+		if err != nil {
+			return err
+		}
+
+		content := b.createImageMessageContent(imageBytes, cfg)
+
+		file := attachment.NewEncryptedFile()
+		file.EncryptInPlace(imageBytes)
+
+		req := mautrix.ReqUploadMedia{
+			ContentBytes: imageBytes,
+			ContentType:  "application/octet-stream",
+		}
+
+		upload, err := b.client.UploadMedia(req)
+		if err != nil {
+			return err
+		}
+
+		content.File = &event.EncryptedFileInfo{
+			EncryptedFile: *file,
+			URL:           upload.ContentURI.CUString(),
+		}
+
+		_, err = b.client.SendMessageEvent(evt.RoomID, event.EventMessage, content)
 		return err
 	}
-
-	imageBytes, err := getImageBytesFromURL(url)
-	if err != nil {
-		return err
-	}
-
-	cfg, err := png.DecodeConfig(bytes.NewReader(imageBytes))
-	if err != nil {
-		return err
-	}
-
-	content := b.createImageMessageContent(imageBytes, cfg)
-
-	file := attachment.NewEncryptedFile()
-	file.EncryptInPlace(imageBytes)
-
-	req := mautrix.ReqUploadMedia{
-		ContentBytes: imageBytes,
-		ContentType:  "application/octet-stream",
-	}
-
-	upload, err := b.client.UploadMedia(req)
-	if err != nil {
-		return err
-	}
-
-	content.File = &event.EncryptedFileInfo{
-		EncryptedFile: *file,
-		URL:           upload.ContentURI.CUString(),
-	}
-
-	_, err = b.client.SendMessageEvent(evt.RoomID, event.EventMessage, content)
-	return err
 }
 
 // resetResponse clears the user's history. If a message is provided, it's processed as a new input.
@@ -241,4 +246,22 @@ func storeFile(data []byte) (fname string, err error) {
 	}
 
 	return tempFile.Name(), nil
+}
+
+// isAbbreviation checks if the input is a valid abbreviation of the action name
+// by matching the input with the initials of hyphen-separated parts in the action name.
+func isAbbreviation(input, actionName string) bool {
+	nameParts := strings.Split(actionName, "-")
+
+	if len(input) != len(nameParts) {
+		return false
+	}
+
+	for i, part := range nameParts {
+		if !strings.HasPrefix(part, input[i:i+1]) {
+			return false
+		}
+	}
+
+	return true
 }

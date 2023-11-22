@@ -8,7 +8,7 @@ import (
 )
 
 // CreateImage makes a request to get a DALL-E image URL.
-func (g *Gpt) CreateImage(ctx context.Context, prompt string) (string, error) {
+func (g *Gpt) CreateImage(ctx context.Context, style, prompt string) (string, error) {
 	var res openai.ImageResponse
 	var err error
 
@@ -19,6 +19,8 @@ func (g *Gpt) CreateImage(ctx context.Context, prompt string) (string, error) {
 		res, err = g.client.CreateImage(
 			ctx,
 			openai.ImageRequest{
+				Model:          openai.CreateImageModelDallE3,
+				Style:          style,
 				Prompt:         prompt,
 				Size:           "1024x1024",
 				ResponseFormat: openai.CreateImageResponseFormatURL,
