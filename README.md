@@ -39,12 +39,12 @@ information.
 
 This bot supports the following commands:
 
-- `!image [text]`: This command will create and return an image based on the text you provide.
+- `!image[-natural/-vivid]`: This command will create and return an image based on the text you provide. The default style is "Natural".
 - `!reset [text]`: This command will reset the user's history. If you provide text after the `!reset` command, the bot generates a response using GPT, based on this input text.
 - `[text]`: If you simply input text without any specific command, the bot will automatically generate a GPT-based response related to the text provided.
 
 ### Additional Notes
 
-- You can implement shortcuts for each command by using the first letter of the command as an alias. For example, `!i` can be used in place of the `!image` command.
-- If you need to stop any ongoing processing, you can just delete your message from the chat.
+- You can use short aliases for a command; for example, `!i` for `!image`, or `!iv` for `!image-vivid`.
+- If you need to stop any ongoing processing, you can just delete your message from the chat`.
 - In case of errors, the bot reacts with a ❌. If you notice this, please check logs.
