@@ -29,7 +29,7 @@ func (g *Gpt) CreateImage(ctx context.Context, style, prompt string) (string, er
 
 		if ctx.Err() == context.Canceled {
 			return "", ctx.Err()
-		} else if !isServiceUnavailableError(err) {
+		} else if !isServiceUnavailableError(err) && len(res.Data) > 0 {
 			break
 		}
 
