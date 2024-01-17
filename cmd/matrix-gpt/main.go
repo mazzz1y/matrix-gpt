@@ -51,7 +51,7 @@ func main() {
 				Name:    "history-limit",
 				Usage:   "Maximum number of history entries",
 				EnvVars: []string{"HISTORY_LIMIT"},
-				Value:   5,
+				Value:   10,
 			},
 			&cli.IntFlag{
 				Name:    "history-expire",
